@@ -2,9 +2,13 @@
   color-scheme: dark;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
   padding: 0;
   background: transparent;
+  border-radius: 12px;
+  overflow: hidden;
 }

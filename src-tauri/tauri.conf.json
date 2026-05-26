@@ -10,6 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "Clipboard",
@@ -18,16 +19,14 @@
         "height": 480,
         "decorations": false,
         "alwaysOnTop": true,
-        "center": false,
+        "center": true,
         "x": null,
         "y": null,
         "visible": false,
         "transparent": true,
         "shadow": true,
         "windowEffects": {
-          "effects": [
-            "sidebar"
-          ]
+          "effects": ["sidebar"]
         }
       }
     ],

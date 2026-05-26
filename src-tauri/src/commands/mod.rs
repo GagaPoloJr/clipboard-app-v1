@@ -26,6 +26,18 @@ pub fn clear_history(db: State<Database>) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn copy_to_clipboard(db: State<Database>, id: String) -> Result<(), String> {
+    let items = db.get_all(None).map_err(|e| e.to_string())?;
+    let item = items.into_iter().find(|i| i.id == id)
+        .ok_or_else(|| "Item not found".to_string())?;
+
+    let mut clipboard = arboard::Clipboard::new().map_err(|e| e.to_string())?;
+    clipboard.set_text(item.content).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn copy_and_paste(
     app: AppHandle,
     db: State<Database>,

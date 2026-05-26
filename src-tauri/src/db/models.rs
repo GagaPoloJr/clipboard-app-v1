@@ -152,7 +152,7 @@ impl Database {
     }
 }
 
-pub fn insert_clipboard_item(
+pub fn create_clipboard_item(
     content: &str,
     content_type: &str,
     preview: &str,

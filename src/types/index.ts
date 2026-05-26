@@ -17,6 +17,7 @@ export interface ClipboardStore {
   selectedIndex: number;
   isLoading: boolean;
   fetchHistory: () => Promise<void>;
+  copyToClipboard: (id: string) => Promise<void>;
   copyAndPaste: (id: string) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   togglePin: (id: string) => Promise<void>;

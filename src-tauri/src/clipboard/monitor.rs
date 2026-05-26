@@ -1,11 +1,14 @@
 use arboard::Clipboard;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::time::{sleep, Duration};
 
-use crate::db::models;
+use crate::db::models::{self, Database};
+
+const MAX_HISTORY: usize = 500;
 
 pub fn start_monitoring(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
+        let db = app.state::<Database>();
         let mut clipboard = Clipboard::new().unwrap();
         let mut last_content: Option<String> = None;
 
@@ -17,10 +20,12 @@ pub fn start_monitoring(app: AppHandle) {
                 };
 
                 if should_insert && !text.is_empty() {
-                    let preview = text.chars().take(120).collect::<String>();
-                    let item = models::insert_clipboard_item(&text, "text", &preview);
-                    if let Ok(item) = item {
-                        let _ = app.emit("clipboard-new-item", &item);
+                    let preview = get_preview(&text);
+                    if let Ok(item) = models::create_clipboard_item(&text, "text", &preview) {
+                        let item_clone = item.clone();
+                        let _ = db.insert(&item);
+                        let _ = db.purge_oldest(MAX_HISTORY);
+                        let _ = app.emit("clipboard-new-item", &item_clone);
                     }
                     last_content = Some(text);
                 }
@@ -28,4 +33,8 @@ pub fn start_monitoring(app: AppHandle) {
             sleep(Duration::from_millis(500)).await;
         }
     });
+}
+
+fn get_preview(text: &str) -> String {
+    text.chars().take(120).collect()
 }
