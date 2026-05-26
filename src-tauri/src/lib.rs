@@ -17,9 +17,12 @@ static LAST_TOGGLE: Mutex<Option<Instant>> = Mutex::new(None);
 
 fn position_window_top_right(window: &tauri::WebviewWindow) {
     if let Ok(Some(monitor)) = window.primary_monitor() {
+        let scale_factor = monitor.scale_factor();
         let monitor_size = monitor.size();
+        let monitor_logical = monitor_size.to_logical::<f64>(scale_factor);
         if let Ok(window_size) = window.outer_size() {
-            let x = (monitor_size.width as f64 - window_size.width as f64 - 16.0).max(0.0);
+            let window_logical = window_size.to_logical::<f64>(scale_factor);
+            let x = (monitor_logical.width - window_logical.width - 16.0).max(0.0);
             let y = 32.0;
             let _ = window.set_position(LogicalPosition::new(x, y));
         }
@@ -41,6 +44,12 @@ fn show_window(handle: &tauri::AppHandle) {
     if let Some(window) = handle.get_webview_window("main") {
         let visible = window.is_visible();
         eprintln!("[SHOW] is_visible() = {:?}", visible);
+        
+        #[cfg(target_os = "macos")]
+        if let Err(e) = handle.show() {
+            eprintln!("[SHOW] handle.show() error: {:?}", e);
+        }
+
         match visible {
             Ok(true) => {
                 eprintln!("[SHOW] already visible, re-focusing");

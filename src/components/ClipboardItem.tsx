@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useClipboardStore } from "../stores/clipboardStore";
 import type { ClipboardItem as ClipboardItemType } from "../types";
 
@@ -26,6 +27,7 @@ function timeAgo(dateStr: string): string {
 export default function ClipboardItem({ item }: Props) {
   const { copyToClipboard, deleteItem, togglePin, selectedIndex, items, searchQuery } =
     useClipboardStore();
+  const [isCopied, setIsCopied] = useState(false);
 
   const list = searchQuery
     ? items.filter(
@@ -37,14 +39,26 @@ export default function ClipboardItem({ item }: Props) {
 
   const isSelected = list.findIndex((i) => i.id === item.id) === selectedIndex;
 
+  useEffect(() => {
+    if (isCopied) {
+      const timer = setTimeout(() => setIsCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isCopied]);
+
   return (
     <div
       className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-        isSelected
+        isCopied 
+          ? "bg-green-500/30 ring-1 ring-inset ring-green-500/50" 
+          : isSelected
           ? "bg-white/20"
           : "hover:bg-white/10"
       }`}
-      onClick={() => copyToClipboard(item.id)}
+      onClick={() => {
+        copyToClipboard(item.id);
+        setIsCopied(true);
+      }}
     >
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white/90 truncate">{item.preview}</p>

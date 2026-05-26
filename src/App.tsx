@@ -62,6 +62,14 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  useEffect(() => {
+    const handleBlur = () => {
+      appWindow.hide();
+    };
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, []);
+
   const filteredItems = searchQuery
     ? items.filter(
         (item) =>

@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Connection, Result, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
@@ -40,23 +40,39 @@ impl Database {
         })
     }
 
-    pub fn insert(&self, item: &ClipboardItem) -> Result<()> {
+    pub fn insert(&self, item: &ClipboardItem) -> Result<ClipboardItem> {
         let conn = self.conn.lock().unwrap();
+        
+        let existing: Option<(String, i32)> = conn.query_row(
+            "SELECT id, is_pinned FROM clipboard_history WHERE content = ?1",
+            params![item.content],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        ).optional()?;
+
+        let mut final_item = item.clone();
+
+        if let Some((id, is_pinned)) = existing {
+            conn.execute("DELETE FROM clipboard_history WHERE id = ?1", params![id])?;
+            if is_pinned != 0 {
+                final_item.is_pinned = true;
+            }
+        }
+
         conn.execute(
             "INSERT INTO clipboard_history (id, content, content_type, preview, app_name, is_pinned, created_at, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
-                item.id,
-                item.content,
-                item.content_type,
-                item.preview,
-                item.app_name,
-                item.is_pinned as i32,
-                item.created_at,
-                item.updated_at,
+                final_item.id,
+                final_item.content,
+                final_item.content_type,
+                final_item.preview,
+                final_item.app_name,
+                final_item.is_pinned as i32,
+                final_item.created_at,
+                final_item.updated_at,
             ],
         )?;
-        Ok(())
+        Ok(final_item)
     }
 
     pub fn get_all(&self, search_query: Option<&str>) -> Result<Vec<ClipboardItem>> {

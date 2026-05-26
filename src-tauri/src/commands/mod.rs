@@ -31,6 +31,11 @@ pub fn copy_to_clipboard(db: State<Database>, id: String) -> Result<(), String> 
     let item = items.into_iter().find(|i| i.id == id)
         .ok_or_else(|| "Item not found".to_string())?;
 
+    {
+        let mut ignore = crate::clipboard::monitor::IGNORE_TEXT.lock().unwrap();
+        *ignore = Some(item.content.clone());
+    }
+
     let mut clipboard = arboard::Clipboard::new().map_err(|e| e.to_string())?;
     clipboard.set_text(item.content).map_err(|e| e.to_string())?;
 
@@ -47,7 +52,12 @@ pub fn copy_and_paste(
     let item = items.into_iter().find(|i| i.id == id)
         .ok_or_else(|| "Item not found".to_string())?;
 
-    paste::copy_and_paste(&item.content)?;
+    {
+        let mut ignore = crate::clipboard::monitor::IGNORE_TEXT.lock().unwrap();
+        *ignore = Some(item.content.clone());
+    }
+
+    crate::paste::copy_and_paste(&item.content)?;
 
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();

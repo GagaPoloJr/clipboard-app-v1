@@ -99,9 +99,13 @@ export const useClipboardStore = create<ClipboardStore>((set) => ({
 
 export function initClipboardListener() {
   const unlisten = listen<ClipboardItem>("clipboard-new-item", (event) => {
-    useClipboardStore.setState((state) => ({
-      items: [event.payload, ...state.items],
-    }));
+    useClipboardStore.setState((state) => {
+      // Remove the old item with the same content if it exists
+      const filteredItems = state.items.filter((item) => item.content !== event.payload.content);
+      return {
+        items: [event.payload, ...filteredItems],
+      };
+    });
   });
   return unlisten;
 }
