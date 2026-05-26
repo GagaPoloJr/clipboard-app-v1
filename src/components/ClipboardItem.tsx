@@ -42,18 +42,38 @@ function highlightText(text: string, query: string) {
     if (matchIdx > idx) {
       parts.push({ text: text.slice(idx, matchIdx), highlight: false });
     }
-    parts.push({ text: text.slice(matchIdx, matchIdx + q.length), highlight: true });
+    parts.push({
+      text: text.slice(matchIdx, matchIdx + q.length),
+      highlight: true,
+    });
     idx = matchIdx + q.length;
   }
 
   return parts.map((part, i) =>
     part.highlight ? (
-      <span key={i} className="text-yellow-200 bg-yellow-400/15 rounded-sm px-0.5">
+      <span
+        key={i}
+        className="text-yellow-200 bg-yellow-400/15 rounded-sm px-0.5"
+      >
         {part.text}
       </span>
     ) : (
       part.text
-    )
+    ),
+  );
+}
+
+function RichTextIcon() {
+  return (
+    <svg
+      className="w-3.5 h-3.5 text-white/40 shrink-0"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+    >
+      <rect x="1" y="2" width="14" height="2" rx="1" />
+      <rect x="1" y="6" width="10" height="2" rx="1" />
+      <rect x="1" y="10" width="12" height="2" rx="1" />
+    </svg>
   );
 }
 
@@ -117,9 +137,20 @@ export default function ClipboardItem({ item }: Props) {
             />
             <p className="text-xs text-white/60">{item.preview}</p>
           </div>
+        ) : item.content_type === "rich_text" ? (
+          <div className="flex items-center gap-1.5 min-w-0">
+            <RichTextIcon />
+            <p className="text-sm text-white/90 truncate">
+              {searchQuery
+                ? highlightText(item.preview, searchQuery)
+                : item.preview}
+            </p>
+          </div>
         ) : (
           <p className="text-sm text-white/90 truncate">
-            {searchQuery ? highlightText(item.preview, searchQuery) : item.preview}
+            {searchQuery
+              ? highlightText(item.preview, searchQuery)
+              : item.preview}
           </p>
         )}
         <p className="text-[10px] text-white/30 mt-0.5">

@@ -81,11 +81,23 @@ pub fn start_monitoring(app: AppHandle) {
                 };
 
                 if should_insert && !text.is_empty() {
-                    let preview = get_preview(&text);
-                    if let Ok(item) = models::create_clipboard_item(&text, "text", &preview) {
-                        if let Ok(inserted_item) = db.insert(&item) {
-                            let _ = db.purge_oldest(MAX_HISTORY);
-                            let _ = app.emit("clipboard-new-item", &inserted_item);
+                    // Check if clipboard has HTML content
+                    let html = crate::paste::get_clipboard_html();
+                    if let Some(html_content) = html {
+                        let preview = strip_html(&html_content);
+                        if let Ok(item) = models::create_clipboard_item(&html_content, "rich_text", &preview) {
+                            if let Ok(inserted_item) = db.insert(&item) {
+                                let _ = db.purge_oldest(MAX_HISTORY);
+                                let _ = app.emit("clipboard-new-item", &inserted_item);
+                            }
+                        }
+                    } else {
+                        let preview = get_preview(&text);
+                        if let Ok(item) = models::create_clipboard_item(&text, "text", &preview) {
+                            if let Ok(inserted_item) = db.insert(&item) {
+                                let _ = db.purge_oldest(MAX_HISTORY);
+                                let _ = app.emit("clipboard-new-item", &inserted_item);
+                            }
                         }
                     }
                     last_text = Some(text);
@@ -98,4 +110,19 @@ pub fn start_monitoring(app: AppHandle) {
 
 fn get_preview(text: &str) -> String {
     text.chars().take(120).collect()
+}
+
+fn strip_html(html: &str) -> String {
+    let mut out = String::new();
+    let mut in_tag = false;
+    for c in html.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => out.push(c),
+            _ => {}
+        }
+    }
+    let trimmed = out.trim();
+    trimmed.chars().take(120).collect()
 }

@@ -62,6 +62,28 @@ pub fn copy_to_clipboard(db: State<Database>, id: String) -> Result<(), String> 
                 })
                 .map_err(|e| e.to_string())?;
         }
+    } else if item.content_type == "rich_text" {
+        // Strip HTML for plain text fallback
+        let plain = item.content
+            .chars()
+            .fold((String::new(), false), |(mut out, in_tag), c| {
+                match c {
+                    '<' => (out, true),
+                    '>' => (out, false),
+                    _ if !in_tag => { out.push(c); (out, false) }
+                    _ => (out, in_tag)
+                }
+            })
+            .0
+            .trim()
+            .to_string();
+
+        crate::paste::set_clipboard_html(&plain, &item.content)?;
+
+        {
+            let mut ignore = crate::clipboard::monitor::IGNORE_TEXT.lock().unwrap();
+            *ignore = Some(plain);
+        }
     } else {
         {
             let mut ignore = crate::clipboard::monitor::IGNORE_TEXT.lock().unwrap();

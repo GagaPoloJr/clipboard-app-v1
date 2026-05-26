@@ -17,12 +17,14 @@ Currently only text clipboard works. Extend to support images:
 - **Frontend**: Show image thumbnail preview in `ClipboardItem`
 - **DB**: Already has `content_type` column — just need to populate it
 
-### 2. Rich Text / HTML Support
+### [x] 2. Rich Text / HTML Support
 
 Detect and preserve formatted content (RTF, HTML from browsers/pages):
 
-- Store `text/html` alongside plain text
-- Render rich preview in the item row (strip tags for preview)
+- **Rust**: `paste/mod.rs` — `get_clipboard_html()` reads HTML from NSPasteboard via osascript (AppKit framework), `set_clipboard_html()` restores both plain text + HTML using base64 + `do shell script`
+- **Rust**: `monitor.rs` — when text is detected, checks for HTML content; if present, stores with `content_type: "rich_text"` and HTML in the `content` field; strips HTML tags for preview
+- **Rust**: `commands/mod.rs` — `copy_to_clipboard` detects `rich_text` type, restores both HTML + plain text to clipboard via `set_clipboard_html()`
+- **Frontend**: `ClipboardItem.tsx` — shows RichText icon (horizontal lines SVG) with plain text preview for rich text items
 
 ### [x] 3. Copy Feedback Toast (done)
 
