@@ -16,7 +16,7 @@ export default function ClipboardList({ items, isLoading }: Props) {
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 44,
+    estimateSize: () => 52,
   });
 
   useEffect(() => {

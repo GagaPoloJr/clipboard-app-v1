@@ -16,8 +16,6 @@ static APP_HANDLE: OnceLock<tauri::AppHandle> = OnceLock::new();
 static LAST_TOGGLE: Mutex<Option<Instant>> = Mutex::new(None);
 
 fn position_window_top_right(window: &tauri::WebviewWindow) {
-    eprintln!("[POSITION] window.cursor_position() error: {:?}", window);
-
     let monitor = if let Ok(cursor_pos) = window.cursor_position() {
         let logical = cursor_pos.to_logical::<f64>(window.scale_factor().unwrap_or(1.0));
         window
@@ -34,16 +32,16 @@ fn position_window_top_right(window: &tauri::WebviewWindow) {
         let scale_factor = monitor.scale_factor();
         let monitor_pos = monitor.position().to_logical::<f64>(scale_factor);
         let monitor_size = monitor.size().to_logical::<f64>(scale_factor);
-        
+
         // Window width is fixed to 360 in tauri.conf.json.
         // We use it directly because outer_size() can report unscaled physical pixels on first load.
         let window_width = 360.0;
         let gap_right = 24.0;
         let gap_top = 40.0; // Account for macOS menu bar
-        
+
         let x = monitor_pos.x + (monitor_size.width - window_width - gap_right).max(0.0);
         let y = monitor_pos.y + gap_top;
-        
+
         let _ = window.set_position(LogicalPosition::new(x, y));
     }
 }

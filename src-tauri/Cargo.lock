@@ -510,7 +510,9 @@ name = "clipboard-app"
 version = "0.1.0"
 dependencies = [
  "arboard",
+ "base64 0.22.1",
  "chrono",
+ "png 0.17.16",
  "rusqlite",
  "serde",
  "serde_json",

@@ -75,7 +75,19 @@ export default function ClipboardItem({ item }: Props) {
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-white/90 truncate">{item.preview}</p>
+        {item.content_type === "image" ? (
+          <div className="flex items-center gap-2">
+            <img
+              src={`data:image/png;base64,${item.content}`}
+              alt={item.preview}
+              className="h-7 w-12 object-cover rounded"
+              loading="lazy"
+            />
+            <p className="text-xs text-white/60">{item.preview}</p>
+          </div>
+        ) : (
+          <p className="text-sm text-white/90 truncate">{item.preview}</p>
+        )}
         <p className="text-[10px] text-white/30 mt-0.5">
           {timeAgo(item.created_at)}
         </p>
