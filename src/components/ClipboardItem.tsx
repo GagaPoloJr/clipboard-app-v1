@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useClipboardStore } from "../stores/clipboardStore";
 import type { ClipboardItem as ClipboardItemType } from "../types";
+import { CopyCheck } from "lucide-react";
 
 interface Props {
   item: ClipboardItemType;
@@ -25,15 +26,21 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function ClipboardItem({ item }: Props) {
-  const { copyToClipboard, deleteItem, togglePin, selectedIndex, items, searchQuery } =
-    useClipboardStore();
+  const {
+    copyToClipboard,
+    deleteItem,
+    togglePin,
+    selectedIndex,
+    items,
+    searchQuery,
+  } = useClipboardStore();
   const [isCopied, setIsCopied] = useState(false);
 
   const list = searchQuery
     ? items.filter(
         (i) =>
           i.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          i.preview.toLowerCase().includes(searchQuery.toLowerCase())
+          i.preview.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     : items;
 
@@ -48,21 +55,30 @@ export default function ClipboardItem({ item }: Props) {
 
   return (
     <div
-      className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-        isCopied 
-          ? "bg-green-500/30 ring-1 ring-inset ring-green-500/50" 
+      className={`group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+        isCopied
+          ? "bg-green-500/30 ring-1 ring-inset ring-green-500/50"
           : isSelected
-          ? "bg-white/20"
-          : "hover:bg-white/10"
+            ? "bg-white/20"
+            : "hover:bg-white/10"
       }`}
       onClick={() => {
         copyToClipboard(item.id);
         setIsCopied(true);
       }}
     >
+      {isCopied && (
+        <div className="fixed top-2 right-4 z-50">
+          <div className="bg-green-500/30 ring-1 ring-inset ring-green-500/50 px-4 py-2 rounded-lg">
+            <CopyCheck className="w-4 h-4 text-white/90" />
+          </div>
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <p className="text-sm text-white/90 truncate">{item.preview}</p>
-        <p className="text-[10px] text-white/30 mt-0.5">{timeAgo(item.created_at)}</p>
+        <p className="text-[10px] text-white/30 mt-0.5">
+          {timeAgo(item.created_at)}
+        </p>
       </div>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <button

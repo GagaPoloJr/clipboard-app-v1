@@ -1,6 +1,5 @@
 use tauri::{AppHandle, Manager, State};
 use crate::db::models::{Database, ClipboardItem};
-use crate::paste;
 
 #[tauri::command]
 pub fn get_history(

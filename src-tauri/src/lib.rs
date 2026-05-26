@@ -3,29 +3,48 @@ mod commands;
 mod db;
 mod paste;
 
+use db::models::Database;
+use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::time::Instant;
-use std::sync::Mutex;
-use db::models::Database;
-use tauri::{LogicalPosition, Manager};
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{LogicalPosition, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 static APP_HANDLE: OnceLock<tauri::AppHandle> = OnceLock::new();
 static LAST_TOGGLE: Mutex<Option<Instant>> = Mutex::new(None);
 
 fn position_window_top_right(window: &tauri::WebviewWindow) {
-    if let Ok(Some(monitor)) = window.primary_monitor() {
+    eprintln!("[POSITION] window.cursor_position() error: {:?}", window);
+
+    let monitor = if let Ok(cursor_pos) = window.cursor_position() {
+        let logical = cursor_pos.to_logical::<f64>(window.scale_factor().unwrap_or(1.0));
+        window
+            .monitor_from_point(logical.x, logical.y)
+            .ok()
+            .flatten()
+    } else {
+        None
+    };
+
+    let monitor = monitor.or_else(|| window.primary_monitor().ok().flatten());
+
+    if let Some(monitor) = monitor {
         let scale_factor = monitor.scale_factor();
-        let monitor_size = monitor.size();
-        let monitor_logical = monitor_size.to_logical::<f64>(scale_factor);
-        if let Ok(window_size) = window.outer_size() {
-            let window_logical = window_size.to_logical::<f64>(scale_factor);
-            let x = (monitor_logical.width - window_logical.width - 16.0).max(0.0);
-            let y = 32.0;
-            let _ = window.set_position(LogicalPosition::new(x, y));
-        }
+        let monitor_pos = monitor.position().to_logical::<f64>(scale_factor);
+        let monitor_size = monitor.size().to_logical::<f64>(scale_factor);
+        
+        // Window width is fixed to 360 in tauri.conf.json.
+        // We use it directly because outer_size() can report unscaled physical pixels on first load.
+        let window_width = 360.0;
+        let gap_right = 24.0;
+        let gap_top = 40.0; // Account for macOS menu bar
+        
+        let x = monitor_pos.x + (monitor_size.width - window_width - gap_right).max(0.0);
+        let y = monitor_pos.y + gap_top;
+        
+        let _ = window.set_position(LogicalPosition::new(x, y));
     }
 }
 
@@ -44,7 +63,7 @@ fn show_window(handle: &tauri::AppHandle) {
     if let Some(window) = handle.get_webview_window("main") {
         let visible = window.is_visible();
         eprintln!("[SHOW] is_visible() = {:?}", visible);
-        
+
         #[cfg(target_os = "macos")]
         if let Err(e) = handle.show() {
             eprintln!("[SHOW] handle.show() error: {:?}", e);
@@ -73,7 +92,10 @@ pub fn run() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |_app, shortcut, event| {
-                    eprintln!("[SHORTCUT] handler fired: shortcut={:?} state={:?}", shortcut, event.state);
+                    eprintln!(
+                        "[SHORTCUT] handler fired: shortcut={:?} state={:?}",
+                        shortcut, event.state
+                    );
                     if event.state == ShortcutState::Pressed {
                         if let Some(handle) = APP_HANDLE.get() {
                             show_window(handle);
@@ -88,9 +110,10 @@ pub fn run() {
             let _ = APP_HANDLE.set(app.handle().clone());
 
             eprintln!("[SETUP] registering shortcut Cmd+Shift+V");
-            app.global_shortcut().register(
-                Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyV),
-            )?;
+            app.global_shortcut().register(Shortcut::new(
+                Some(Modifiers::SUPER | Modifiers::SHIFT),
+                Code::KeyV,
+            ))?;
             eprintln!("[SETUP] shortcut registered OK");
 
             let show_item = MenuItemBuilder::with_id("toggle", "Show/Hide").build(app)?;
@@ -103,16 +126,14 @@ pub fn run() {
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .on_menu_event(|app, event| {
-                    match event.id().as_ref() {
-                        "toggle" => {
-                            show_window(app);
-                        }
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        _ => {}
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "toggle" => {
+                        show_window(app);
                     }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
@@ -133,8 +154,8 @@ pub fn run() {
             std::fs::create_dir_all(&app_dir).expect("failed to create app data dir");
 
             let db_path = app_dir.join("clipboard.db");
-            let db = Database::new(db_path.to_str().unwrap())
-                .expect("failed to initialize database");
+            let db =
+                Database::new(db_path.to_str().unwrap()).expect("failed to initialize database");
 
             app.manage(db);
 
