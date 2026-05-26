@@ -8,7 +8,7 @@
 
 ## High Priority
 
-### 1. Image Clipboard Support
+### [x] 1. Image Clipboard Support
 
 Currently only text clipboard works. Extend to support images:
 
@@ -24,7 +24,7 @@ Detect and preserve formatted content (RTF, HTML from browsers/pages):
 - Store `text/html` alongside plain text
 - Render rich preview in the item row (strip tags for preview)
 
-### 3. Copy Feedback Toast (done)
+### [x] 3. Copy Feedback Toast (done)
 
 Show a brief "Copied!" notification when clicking an item:
 
@@ -32,20 +32,19 @@ Show a brief "Copied!" notification when clicking an item:
 - Tiny animation (slide up, fade out)
 - Component: `src/components/Toast.tsx`
 
-### 4. Search Highlight
+### [x] 4. Search Highlight
 
 Highlight matching text in item previews when a search query is active:
 
-- Parse search query, wrap matches in `<mark>` or `<span>` with highlight class
-- Use `text-yellow-200` or similar for highlights
+- **Frontend**: Split preview text by query match, wrap matches in styled `<span>` with `text-yellow-200 bg-yellow-400/15` highlight
+- Uses case-insensitive matching, works with the existing search flow
 
-### 5. Window Show Animation
+### [x] 5. Window Show Animation
 
 Smooth entry animation when the window appears (currently instant):
 
-- Add a subtle scale + opacity transition on show
-- CSS: `animate-in` with `@keyframes`
-- Consider `requestAnimationFrame` approach
+- **CSS**: `@keyframes window-in` — opacity 0→1 + scale 0.95→1 over 150ms ease-out
+- **Frontend**: Listens for window focus event (`onFocusChanged`), resets animation via reflow hack to replay on every show
 
 ---
 

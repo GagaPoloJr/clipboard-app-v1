@@ -25,6 +25,38 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
+function highlightText(text: string, query: string) {
+  if (!query) return text;
+
+  const lower = text.toLowerCase();
+  const q = query.toLowerCase();
+  const parts: { text: string; highlight: boolean }[] = [];
+  let idx = 0;
+
+  while (idx < text.length) {
+    const matchIdx = lower.indexOf(q, idx);
+    if (matchIdx === -1) {
+      parts.push({ text: text.slice(idx), highlight: false });
+      break;
+    }
+    if (matchIdx > idx) {
+      parts.push({ text: text.slice(idx, matchIdx), highlight: false });
+    }
+    parts.push({ text: text.slice(matchIdx, matchIdx + q.length), highlight: true });
+    idx = matchIdx + q.length;
+  }
+
+  return parts.map((part, i) =>
+    part.highlight ? (
+      <span key={i} className="text-yellow-200 bg-yellow-400/15 rounded-sm px-0.5">
+        {part.text}
+      </span>
+    ) : (
+      part.text
+    )
+  );
+}
+
 export default function ClipboardItem({ item }: Props) {
   const {
     copyToClipboard,
@@ -86,7 +118,9 @@ export default function ClipboardItem({ item }: Props) {
             <p className="text-xs text-white/60">{item.preview}</p>
           </div>
         ) : (
-          <p className="text-sm text-white/90 truncate">{item.preview}</p>
+          <p className="text-sm text-white/90 truncate">
+            {searchQuery ? highlightText(item.preview, searchQuery) : item.preview}
+          </p>
         )}
         <p className="text-[10px] text-white/30 mt-0.5">
           {timeAgo(item.created_at)}

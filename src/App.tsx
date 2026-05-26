@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { useClipboardStore, initClipboardListener } from "./stores/clipboardStore";
 import SearchBar from "./components/SearchBar";
@@ -13,12 +13,23 @@ function App() {
   const { fetchHistory, searchQuery, copyToClipboard, selectedIndex, setSelectedIndex, items, isLoading } =
     useClipboardStore();
   const [showSettings, setShowSettings] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const unlisten = initClipboardListener();
     fetchHistory();
+
+    const unlistenFocus = appWindow.onFocusChanged(({ payload: focused }) => {
+      if (focused && rootRef.current) {
+        rootRef.current.style.animation = "none";
+        void rootRef.current.offsetWidth;
+        rootRef.current.style.animation = "window-in 0.15s ease-out";
+      }
+    });
+
     return () => {
       unlisten.then((fn) => fn());
+      unlistenFocus.then((fn) => fn());
     };
   }, []);
 
@@ -79,7 +90,7 @@ function App() {
     : items;
 
   return (
-    <div className="h-full w-full flex flex-col bg-gray-900 rounded-xl overflow-hidden select-none relative border-2 border-blue-500">
+    <div ref={rootRef} className="h-full w-full flex flex-col bg-gray-900 rounded-xl overflow-hidden select-none relative border-2 border-blue-500" style={{ animation: "window-in 0.15s ease-out" }}>
       <SearchBar />
       <div className="flex-1 min-h-0">
         <ClipboardList items={filteredItems} isLoading={isLoading} />
